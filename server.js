@@ -51,25 +51,30 @@ app.get('/api/recipes/random', async (req, res) => {
 // server.js
 
 app.post('/api/recipes/filter', async (req, res) => {
-  const { ingredients } = req.body;
-  console.log('Received ingredients:', ingredients); // Debug log
-
-  if (!ingredients || ingredients.length === 0) {
-    return res.status(400).json({ error: 'No ingredients provided' });
-  }
-  
   try {
+    const { ingredients } = req.body;
+    console.log('Received ingredients:', ingredients);
+
+    if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
+      return res.status(400).json({ error: 'Invalid or no ingredients provided' });
+    }
+
+    // Convert all ingredients to lowercase for case-insensitive matching
+    const lowercaseIngredients = ingredients.map(ing => ing.toLowerCase());
+
     const recipes = await Recipe.find({
-      ingredients: { $in: ingredients }
-    }).sort({ 
-      ingredients: { $size: { $setIntersection: ["$ingredients", ingredients] } }
+      ingredients: { 
+        $elemMatch: { 
+          $regex: new RegExp(lowercaseIngredients.join('|'), 'i') 
+        } 
+      }
     }).limit(10);
-    
-    console.log('Filtered recipes:', recipes); // Debug log
+
+    console.log('Filtered recipes:', recipes);
     res.json(recipes);
   } catch (error) {
-    console.error('Error filtering recipes:', error);
-    res.status(500).json({ error: 'An error occurred while filtering recipes' });
+    console.error('Error in /api/recipes/filter:', error);
+    res.status(500).json({ error: 'An error occurred while filtering recipes', details: error.message });
   }
 });
 
