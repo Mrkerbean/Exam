@@ -6,12 +6,25 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Updated CORS configuration
 app.use(cors({
   origin: ['https://exam-58bp9czj1-kervins-projects-769d5052.vercel.app', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 204
 }));
+
+// Add this middleware to log CORS headers
+app.use((req, res, next) => {
+  console.log('CORS Headers:', res.getHeaders());
+  next();
+});
+
 app.use(express.json());
+
+// Enable pre-flight requests for all routes
+app.options('*', cors());
 
 // Connect to MongoDB using environment variable
 mongoose.connect(process.env.MONGODB_URI)
@@ -33,10 +46,10 @@ app.get('/api/recipes', async (req, res) => {
     const recipes = await Recipe.find();
     res.json(recipes);
   } catch (error) {
+    console.error('Error fetching recipes:', error);
     res.status(500).json({ error: 'An error occurred while fetching recipes' });
   }
 });
-
 
 app.get('/api/recipes/random', async (req, res) => {
   try {
@@ -48,11 +61,10 @@ app.get('/api/recipes/random', async (req, res) => {
     }
     res.json(recipe);
   } catch (error) {
+    console.error('Error fetching random recipe:', error);
     res.status(500).json({ error: 'An error occurred while fetching a random recipe' });
   }
 });
-
-// server.js
 
 app.post('/api/recipes/filter', async (req, res) => {
   try {
@@ -95,6 +107,7 @@ app.post('/api/recipes', async (req, res) => {
     await newRecipe.save();
     res.status(201).json(newRecipe);
   } catch (error) {
+    console.error('Error creating recipe:', error);
     res.status(500).json({ error: 'An error occurred while creating the recipe' });
   }
 });
@@ -104,6 +117,5 @@ if (process.env.VERCEL) {
   module.exports = app;
 } else {
   // Local environment
-  const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
