@@ -6,7 +6,11 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://your-frontend-vercel-url.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Connect to MongoDB using environment variable
@@ -95,5 +99,11 @@ app.post('/api/recipes', async (req, res) => {
   }
 });
 
-//app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-module.exports = app;
+if (process.env.VERCEL) {
+  // Vercel serverless environment
+  module.exports = app;
+} else {
+  // Local environment
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
